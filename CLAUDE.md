@@ -4,6 +4,14 @@
 
 只写"看代码看不出来但必须知道"的内容。**禁止信息重复**——同一事实只在一处出现，其他地方引用或省略，避免修改时出现不一致。
 
+**信息来源优先级**（适用于 CLAUDE.md 和 skill 文件）：仓库代码 > CLAUDE.md > skill/markdown 文件。当某个信息在更高优先级的来源中已存在，只记录引用位置（如"见 CLAUDE.md"、"见 conf/ 下的 yaml"），不重复写内容。
+
+---
+
+## 语言要求
+
+所有回复只能使用**中文**或**英文**，禁止出现其他语言（包括日文、韩文等）。
+
 ---
 
 ## 项目概述
@@ -123,6 +131,22 @@ conda run -n $CONDA_ENV tensorboard --logdir ~/data/exp --port 6006 --bind_all
 
 新工作一律用 `app2/`，`app/` 是旧版 v3（默认数据源见 `.claude/session-context.sh`）。
 
+### 实验目录文档规范
+
+每个实验目录下必须维护：
+
+**`description.md`**（创建或重启实验时更新）：
+```markdown
+# <实验名>
+
+**目的**：
+**分支**：
+**关键参数**：
+**预期验证**：
+```
+
+**`design.md`**（涉及代码设计或超参讨论时维护）：记录设计方案、分析过程和 Q&A，跨 session 开发时优先阅读此文件恢复上下文。
+
 ---
 
 ## Git 操作规范
@@ -140,3 +164,6 @@ conda run -n $CONDA_ENV tensorboard --logdir ~/data/exp --port 6006 --bind_all
 - submodule 在 jasper 中是 detached HEAD 状态，`git checkout` 到具体 commit 才生效
 - `fenghe` 是命名空间包，`lib/fenghe/` 和 `lib2/python/fenghe/` 合并；unittest 不执行 conftest，需手动在 PYTHONPATH 包含两个路径
 - 重复运行实验时保留 `description.md`，只删实验产物（`train/`、`merged/`、`outputs/`、`run.log`、`windows/`）
+- **分析实验前必须先读 `compass-app-jasper/app2/README.md`**，了解输出目录层级，不可对目录结构做假设
+- OVERRIDE 中每个参数必须确认存在于 `conf/` 下的 yaml，且必须用完整 Hydra 路径（如 `backtest.window_generator.size=2000`，不能写 `window_generator.size=2000`）
+- seed 覆盖用 `seed=seed-01`，**不能**用 `+seed=seed-01`（会报重复 key 错误）
