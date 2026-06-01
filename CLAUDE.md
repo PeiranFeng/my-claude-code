@@ -111,6 +111,14 @@ kill -- -$(ps -o pgid= -p <PID> | tr -d ' ')
 
 ---
 
+## Git 操作规范
+
+执行任何 git 命令前，必须明确目标仓库。如果用户指令中没有明确说明是哪个仓库，**先询问，不得静默执行**。
+
+涉及的仓库：`my-claude-code` / `compass-app-jasper` / `compass-core` / `fenghe-nn`
+
+---
+
 ## 注意事项
 
 - **jasper 测试用 `unittest`**，compass-core 用 `pytest`，两个仓库不要混用
