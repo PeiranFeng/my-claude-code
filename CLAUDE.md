@@ -13,7 +13,8 @@
 3. **避免无效推理陷阱**：没有证据不猜测根因；不对目录结构、配置含义做假设并基于假设继续推理；任务卡住时回报用户，而不是换方向"自行研究"。一句话总结：**遇到边界就停下问用户，而不是替用户做决定继续走**。
 4. **不修改无关格式**：修改代码时，不改动需求范围之外的缩进、换行、空格等格式，保持原有代码风格不变。
 5. **代码检查要悲观，没有调查没有发言权**：评估代码（review 建议、判断某问题"已修复"或"非 bug"）时默认悲观——假定可能仍有问题，而不是乐观假定没事。下"已修复/非 bug/不受影响"这类结论前，必须先**实地调查验证**（实际运行、写最小复现、追代码与配置链路），不得仅凭 commit message、他人描述或纯推理就下结论。结论必须有调查证据支撑。
-6. **不在代码仓库内跑实验/测试**：实验和测试一律在独立输出目录（如 `test/`、`exp/`）运行，禁止在仓库目录内直接运行——Hydra 等会生成 `outputs/`、`train/`、`merged/` 等产物污染仓库代码。运行前确认工作目录在仓库之外。
+6. **禁止在 tensor 创建时手动指定 `device=`**：项目通过 `try_to_use_gpu()` 统一设置默认 device（见注意事项），手动指定反而会造成与全局设置不一致的风险。code review 时不应以缺少 `device=` 为由提修改建议。
+7. **不在代码仓库内跑实验/测试**：实验和测试一律在独立输出目录（如 `test/`、`exp/`）运行，禁止在仓库目录内直接运行——Hydra 等会生成 `outputs/`、`train/`、`merged/` 等产物污染仓库代码。运行前确认工作目录在仓库之外。
 
 ---
 
@@ -180,3 +181,4 @@ conda run -n $CONDA_ENV tensorboard --logdir ~/data/exp --port 6006 --bind_all
 - **分析实验前必须先读 `compass-app-jasper/app2/README.md`**，了解输出目录层级，不可对目录结构做假设
 - OVERRIDE 中每个参数必须确认存在于 `conf/` 下的 yaml，且必须用完整 Hydra 路径（如 `backtest.window_generator.size=2000`，不能写 `window_generator.size=2000`）
 - seed 覆盖用 `seed=seed-01`，**不能**用 `+seed=seed-01`（会报重复 key 错误）
+- **PyTorch tensor 默认 device 由 `try_to_use_gpu()` 统一设置**（`core/lib/utility/device.py:16`），在训练入口 `app2/train.py` 最顶部调用后，所有 `torch.tensor()`、`torch.arange()` 等创建操作自动使用 GPU device，无需每次显式传 `device=` 参数。
