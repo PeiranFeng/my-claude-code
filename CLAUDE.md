@@ -181,6 +181,8 @@ conda run -n $CONDA_ENV tensorboard --logdir ~/data/exp --port 6006 --bind_all
 
 合并不同分支时，**必须使用 `git merge`，禁止使用 `git rebase`**。rebase 会改写提交历史，在多人协作分支上会造成混乱。
 
+切换分支前，**必须先执行 `git fetch origin`**，确保本地看到的远程分支状态是最新的。
+
 ---
 
 ## 注意事项

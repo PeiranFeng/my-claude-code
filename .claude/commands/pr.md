@@ -1,11 +1,11 @@
 ---
 name: pr
-description: 拉取指定仓库和时间范围内的 GitHub PR，逐条翻译成中文并保存到 ~/data/pr/<repo>/<number>.md
+description: 拉取指定仓库和时间范围内的 GitHub PR，阅读源码并进行分析，保存到 ~/data/pr/<repo>/<number>.md
 disable-model-invocation: false
 allowed-tools: Bash Read Write
 ---
 
-# /pr — GitHub Pull Request 中文归档
+# /pr — GitHub Pull Request 分析归档
 
 ## Step 1 — 确认参数
 
@@ -73,8 +73,8 @@ ls ~/data/pr/<repo>/<number>.md 2>/dev/null
 对每个 PR，按以下子步骤执行：
 
 - 若该编号的文件**已存在**且用户选择**跳过**：直接略过，不拉取、不写入。
-- 若该编号的文件**已存在**且用户选择**覆盖**：先删除已有文件，再执行 3b/3c。
-- 若该编号的文件**不存在**：直接执行 3b/3c。
+- 若该编号的文件**已存在**且用户选择**覆盖**：先删除已有文件，再执行 3a–3d。
+- 若该编号的文件**不存在**：直接执行 3a–3d。
 
 ### 3a — 删除已有文件（仅覆盖模式）
 
@@ -82,7 +82,7 @@ ls ~/data/pr/<repo>/<number>.md 2>/dev/null
 rm ~/data/pr/<repo>/<number>.md
 ```
 
-### 3b — 拉取完整内容
+### 3b — 拉取 PR 元数据和审查意见
 
 ```bash
 gh pr view <number> \
@@ -90,12 +90,40 @@ gh pr view <number> \
   --json number,title,url,state,body,comments,reviews,labels,assignees,author,createdAt,closedAt,mergedAt,baseRefName,headRefName
 ```
 
-### 3c — 翻译并写入 MD 文件
+同时拉取 diff，用于了解改动范围：
 
-将上述 JSON 内容翻译成中文，写入 `~/data/pr/<repo>/<number>.md`。
+```bash
+gh pr diff <number> --repo FinAI-Project/<repo>
+```
 
-**翻译规则**：
-1. 所有正文（标题、正文、评论、Review 意见）译为中文；专有名词、技术术语后用括号注释英文原文，例如：合并（merge）、代码审查（code review）、基础分支（base branch）
+### 3c — 阅读源码，理解改动
+
+**不切换分支**。先 fetch，再用 `git show` 直接读取远程分支上的文件：
+
+```bash
+# 1. fetch（确保 origin/<headRefName> 是最新状态）
+git -C ~/data/<repo> fetch origin
+
+# 2. 读取文件（不切换本地分支）
+git -C ~/data/<repo> show origin/<headRefName>:<path/to/file>
+```
+
+根据仓库不同，选择对应的入口文件开始阅读：
+
+- **compass-app-jasper**：从 `app2/Makefile` 或 `app2/train.py` 出发，追踪 diff 中涉及的模块
+- **compass-core / fenghe-nn**：从 diff 中涉及的测试文件（`test/` 目录）出发，再追踪到被测试的实现文件
+
+阅读目标：
+1. 明确每个改动文件的职责和在整体架构中的位置
+2. 理解新增/修改代码的逻辑（做了什么、为什么这样做）
+3. 识别潜在的数值安全、边界条件、接口设计问题
+
+### 3d — 写入 MD 文件
+
+将分析结果写入 `~/data/pr/<repo>/<number>.md`，**不是简单翻译 PR 内容，而是基于源码阅读的实质性分析**。
+
+**写作规则**：
+1. 所有文字使用**中文**；专有名词、技术术语后用括号注释英文原文，例如：跳跃扩散（jump-diffusion）、前向传播（forward pass）
 2. 代码块（`` ``` `` 包裹的内容）**保持原文不翻译**
 3. 遇到图片（Markdown 中的 `![...](...)`）替换为：`【此处有一张图片，无法解析】`
 4. 遇到其他无法解析的内容（附件、视频等），注明：`【此处有附件/媒体内容，无法解析】`
@@ -119,29 +147,26 @@ gh pr view <number> \
 
 ---
 
-## 描述（Description）
+## 变更摘要（Change Summary）
 
-<翻译后的 body 正文>
-
----
-
-## 评论（Comments）
-
-### 评论 1 — <author>（<createdAt>）
-
-<翻译后的评论内容>
-
-（若无评论则写"暂无评论（No comments）"）
+<!-- 基于源码阅读的改动说明，不是 PR body 的翻译。说明：改了哪些文件、各自的职责、核心逻辑变化。 -->
 
 ---
 
-## 代码审查意见（Reviews）
+## 代码审查（Code Review）
 
-### 审查 1 — <author>（<submittedAt>）【通过（APPROVED）/ 请求修改（CHANGES_REQUESTED）/ 评论（COMMENTED）】
+<!-- 基于源码阅读的独立审查意见。关注：数值安全、边界条件、接口设计、算法正确性。每条意见注明对应文件和行号（如已知）。若无问题可写"未发现明显问题"。 -->
 
-<翻译后的审查内容>
+---
 
-（若无审查意见则写"暂无审查意见（No reviews）"）
+## 审查意见评估（Review Comment Evaluation）
+
+<!-- 逐条评估 PR 上已有的审查意见（包括 Gemini 和人工审查），判断每条意见是否成立、是否重要、是否已被处理。格式：
+### 意见 N — <author>
+**原文摘要**：…
+**评估**：成立 / 不成立 / 部分成立
+**理由**：…
+-->
 ```
 
 ---
