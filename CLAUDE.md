@@ -170,15 +170,12 @@ PYTHONSAFEPATH=1 PYTHONPATH=$PWD/core:$PWD/app2:$PWD/lib:$PWD/lib2/python \
   conda run -n $CONDA_ENV python -m unittest discover -s test/app2/data -v
 
 # 运行实验（必须通过 run.sh，禁止直接调用子 Makefile）
+# CONFIG_NAME、DATA_SOURCE_PATH、BACKTEST、SEEDS、OVERRIDE 参数选择一律参见 app2/README.md
 # 临时验证 → test/；持久化 → exp/；先创建 description.md
 mkdir -p ~/data/test/<exp-dir>
 cp ~/data/run_exp/run.sh ~/data/test/<exp-dir>/
 cd ~/data/test/<exp-dir>
-bash run.sh \
-  DATA_SOURCE_PATH=$DATA_JP \
-  BACKTEST=latest SEEDS="seed-00" \
-  OVERRIDE="schema_file_path=conf/schema_files/mini.yaml train/execution=small train/executor=bold" \
-  > run.log 2>&1 &
+bash run.sh [参见 README] > run.log 2>&1 &
 
 # 停止实验
 kill -- -$(ps -o pgid= -p <PID> | tr -d ' ')
@@ -226,7 +223,7 @@ conda run -n $CONDA_ENV tensorboard --logdir ~/data/exp --port 6006 --bind_all
 - submodule 在 jasper 中是 detached HEAD 状态，`git checkout` 到具体 commit 才生效
 - `fenghe` 是命名空间包，`lib/fenghe/` 和 `lib2/python/fenghe/` 合并；unittest 不执行 conftest，需手动在 PYTHONPATH 包含两个路径
 - 重复运行实验时保留 `description.md`，只删实验产物（`train/`、`merged/`、`outputs/`、`run.log`、`windows/`）
-- **分析实验前必须先读 `compass-app-jasper/app2/README.md`**，了解输出目录层级，不可对目录结构做假设
+- **运行或分析实验前必须先读 `compass-app-jasper/app2/README.md`**：运行时参照 README 选择 CONFIG_NAME、DATA_SOURCE_PATH 及其他参数；分析时参照 README 了解输出目录层级，不可对目录结构做假设
 - OVERRIDE 中每个参数必须确认存在于 `conf/` 下的 yaml，且必须用完整 Hydra 路径（如 `backtest.window_generator.size=2000`，不能写 `window_generator.size=2000`）
 - seed 覆盖用 `seed=seed-01`，**不能**用 `+seed=seed-01`（会报重复 key 错误）
 - **PyTorch tensor 默认 device 由 `try_to_use_gpu()` 统一设置**（`core/lib/utility/device.py:16`），在训练入口 `app2/train.py` 最顶部调用后，所有 `torch.tensor()`、`torch.arange()` 等创建操作自动使用 GPU device，无需每次显式传 `device=` 参数。
