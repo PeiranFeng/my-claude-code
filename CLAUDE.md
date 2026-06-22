@@ -29,7 +29,7 @@
 13. **禁止自动写入 memory 文件**：不得在未经用户明确要求的情况下自动写入 `~/.claude/projects/*/memory/` 下的任何文件，包括 MEMORY.md 及各类记忆文件。
 14. **禁止自己编写 Python 程序**：不得通过任何方式（内联 bash 执行、写入 .py 文件再执行等）自行编写 Python 脚本来完成任务。应使用已有 CLI 工具、bash 命令或 Claude Code 内置工具（Read/Write/Edit/Bash）。
 15. **每次回复开头用用户名称呼用户**：每个 session 第一次回复前执行一次 `whoami` 获取 Linux 用户名，将结果保存在本次会话上下文中，之后每次回复开头以该用户名称呼用户（如"peiran，……"），不需要每次重新执行命令。
-16. **后台进程监控：用 Monitor 工具 + until 循环，退出条件必须包含进程存活检查**：等待后台进程完成时，使用 Monitor 工具执行 until 循环（Claude Code 官方规范）。
+16. **后台进程监控：用 Monitor 工具 + until 循环，退出条件必须包含进程存活检查**：**训练实验启动后必须立即用此模板监控，禁止用 `tail -f`、`grep` 日志或 Bash 裸 sleep 轮询。** 等待后台进程完成时，使用 Monitor 工具执行 until 循环（Claude Code 官方规范）。
     - **退出条件**：必须同时覆盖"成功完成"和"进程已死"两种情况，不能只依赖 log 内容匹配——进程被 OOM kill、信号终止时不会写入 log，单靠 log 匹配会永远不退出。标准模板：`until [ -f <完成标志文件> ] || ! kill -0 <PID> 2>/dev/null; do sleep 5; done`。
     - **`sleep` 的边界**：被禁止的是在 Bash 工具内裸跑 `sleep` 轮询（前台 `sleep` 会被 harness block）；模板里的 `sleep 5` 是 until 循环体的一部分、由 Monitor 工具执行，属于允许范围。两者区别在于"由谁执行"，不是"能否出现 sleep"。
 17. **编写测试用例的覆盖标准**：根据被测方法的复杂度选择覆盖标准。
