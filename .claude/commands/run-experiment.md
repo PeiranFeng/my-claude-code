@@ -34,7 +34,7 @@ cd ~/data/compass-app-jasper && git submodule status
 - 向用户确认目录名和类型（test/exp）
 
 **如果目录已存在**（重复运行）：
-- 告知用户需要清理实验产物（`train/`、`merged/`、`outputs/`、`run.log`、`windows/` 等），保留 `description.md` 和 `design.md`
+- 告知用户需要清理实验产物（`train/`、`merged/`、`outputs/`、`run.log`、`windows/` 等），保留 `description.md`
 - 等待用户确认后清理，再继续
 
 **如果目录不存在**（新实验）：
