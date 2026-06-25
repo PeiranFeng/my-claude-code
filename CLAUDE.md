@@ -306,6 +306,7 @@ GitHub Actions 触发的实验，实际运行的代码与本地一样来自 comp
 
 - **能执行** → 当前机器接收 k8s 调度，可直接观察运行中的实验：
   - **找实验**：`kubectl get po` 列出所有 pod，pod 名即「实验名（与 git action 一致，含 run-id）+ k8s 随机后缀」；`STATUS` 为 `Running` 表示进行中，`Completed` 表示已结束。
+  - **从 Actions run 链接对齐 pod**：pod 名（及 `/output` 产物名）里的 `<run-id>` 是 Actions 的 **run number**（页面显示为 `#N`）。用 `gh run list --repo <repo> --branch <branch> --json number,databaseId` 取 `number` 字段，对齐到 pod 名前缀 `<branch>-<number>-<job>`。
   - **看日志/中间产物**：实验在 pod 内的工作目录是 `/tmp/runner`（**不是** `/output`），实时日志 `kubectl exec <pod> -- tail -f /tmp/runner/output.log`。`/tmp/runner` 内的输出目录层级随分支而异，需要时以对应分支的代码（makefile）为准，不做假设。
   - **同步到 /output 的时机**：运行期间 `/output` 为空；实验全部窗口完成后，由 `rclone-output-*` pod 将 `/tmp/runner` 的结果 rclone 同步到 `/output/<批次>/`。
 - **不能执行** → 当前机器不受 k8s 调度，无法观察运行中实验的状态，只能被动等结果同步到 `/output` 后再分析。
