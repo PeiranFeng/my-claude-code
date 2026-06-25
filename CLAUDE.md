@@ -298,9 +298,17 @@ conda run -n $CONDA_ENV tensorboard --logdir ~/data/exp --port 6006 --bind_all
 
 ### GitHub Actions 实验产物
 
-GitHub Actions 触发的实验产物放在 `/output/` 下。批次目录默认为当月（如 `2026-05`），也可能特殊指定。目录内每个实验的命名格式为 `<branch>-<run-id>-<job>`。
+GitHub Actions 触发的实验，实际运行的代码与本地一样来自 compass-app-jasper 仓库，输出目录结构与本地实验（`~/data/test`、`~/data/exp`）大同小异，差异仅在所跑的分支不同。
 
-查找某个 run-id 的实验时，若当月目录不存在或找不到对应条目，可能是产物尚未同步，而非实验未运行。
+最终产物同步到 `/output/` 下。批次目录默认为当月（如 `2026-05`），也可能特殊指定。目录内每个实验的命名格式为 `<branch>-<run-id>-<job>`。查找某个 run-id 的实验时，若当月目录不存在或找不到对应条目，可能是产物尚未同步，而非实验未运行。
+
+**当前机器是否受 k8s 调度，以 `kubectl get po` 能否执行为准：**
+
+- **能执行** → 当前机器接收 k8s 调度，可直接观察运行中的实验：
+  - **找实验**：`kubectl get po` 列出所有 pod，pod 名即「实验名（与 git action 一致，含 run-id）+ k8s 随机后缀」；`STATUS` 为 `Running` 表示进行中，`Completed` 表示已结束。
+  - **看日志/中间产物**：实验在 pod 内的工作目录是 `/tmp/runner`（**不是** `/output`），实时日志 `kubectl exec <pod> -- tail -f /tmp/runner/output.log`。`/tmp/runner` 内的输出目录层级随分支而异，需要时以对应分支的代码（makefile）为准，不做假设。
+  - **同步到 /output 的时机**：运行期间 `/output` 为空；实验全部窗口完成后，由 `rclone-output-*` pod 将 `/tmp/runner` 的结果 rclone 同步到 `/output/<批次>/`。
+- **不能执行** → 当前机器不受 k8s 调度，无法观察运行中实验的状态，只能被动等结果同步到 `/output` 后再分析。
 
 ---
 
