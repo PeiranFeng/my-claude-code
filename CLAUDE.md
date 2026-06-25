@@ -296,6 +296,12 @@ conda run -n $CONDA_ENV tensorboard --logdir ~/data/exp --port 6006 --bind_all
 **预期验证**：
 ```
 
+### GitHub Actions 实验产物
+
+GitHub Actions 触发的实验产物放在 `/output/` 下。批次目录默认为当月（如 `2026-05`），也可能特殊指定。目录内每个实验的命名格式为 `<branch>-<run-id>-<job>`。
+
+查找某个 run-id 的实验时，若当月目录不存在或找不到对应条目，可能是产物尚未同步，而非实验未运行。
+
 ---
 
 ## Git 操作规范
