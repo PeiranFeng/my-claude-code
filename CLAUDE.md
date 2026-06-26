@@ -120,7 +120,7 @@
 
 **9-2. 禁止自动写入 memory 文件**：不得在未经用户明确要求的情况下自动写入 `~/.claude/projects/*/memory/` 下的任何文件，包括 MEMORY.md 及各类记忆文件。
 
-**9-3. 禁止自己编写 Python 程序**：不得通过任何方式（内联 bash 执行、写入 .py 文件再执行等）自行编写 Python 脚本来完成任务。应使用已有 CLI 工具、bash 命令或 Claude Code 内置工具（Read/Write/Edit/Bash）。
+**9-3. 禁止自己编写 Python 程序**：不得通过任何方式（内联 bash 执行、写入 .py 文件再执行等）自行编写 Python 脚本来完成任务。应使用已有 CLI 工具、bash 命令或 Claude Code 内置工具（Read/Write/Edit/Bash）。唯一例外：读取 parquet 文件时，可以用 `python -c "..."` 内联或写入临时 `.py` 文件，但临时文件用完后必须立即删除。
 
 **9-4. 后台进程监控：用 Monitor 工具 + until 循环，退出条件必须包含进程存活检查**：**训练实验启动后必须立即用此模板监控，禁止用 `tail -f`、`grep` 日志或 Bash 裸 sleep 轮询。** 等待后台进程完成时，使用 Monitor 工具执行 until 循环（Claude Code 官方规范）。
 - **退出条件**：必须同时覆盖"成功完成"和"进程已死"两种情况，不能只依赖 log 内容匹配——进程被 OOM kill、信号终止时不会写入 log，单靠 log 匹配会永远不退出。标准模板：`until [ -f <完成标志文件> ] || ! kill -0 <PID> 2>/dev/null; do sleep 5; done`。
