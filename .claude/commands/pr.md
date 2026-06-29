@@ -90,6 +90,13 @@ gh pr view <number> \
   --json number,title,url,state,body,comments,reviews,labels,assignees,author,createdAt,closedAt,mergedAt,baseRefName,headRefName
 ```
 
+同时拉取 inline review comments（`gh pr view --json reviews` 只返回 review body，不含 inline comments）：
+
+```bash
+gh api repos/FinAI-Project/<repo>/pulls/<number>/comments \
+  --jq '.[] | {id, path, line, body, user: .user.login}'
+```
+
 同时拉取 diff，用于了解改动范围：
 
 ```bash
