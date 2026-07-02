@@ -17,9 +17,10 @@ allowed-tools: Bash Read Agent AskUserQuestion
 - **仓库**（repo）：`compass-app-jasper` / `compass-core` / `fenghe-nn`
 - **分支**（branch）：local 用当前 git 分支；remote 用 PR 的 headRefName
 - **remote 时还需**：PR 编号、PR 所属仓库全名（如 `FinAI-Project/<repo>`）
+- **local 时还需**：base 分支（diff 对比的基准分支）。调用方给出则直接用；未给出则用 `git -C ~/data/<repo> merge-base` 计算一次
 - **覆盖策略**：`~/data/review/<repo>/<branch>/` 已存在时，覆盖 / 保留现状。若调用方已经就同一改动做过覆盖/跳过的决策（例如 `/pr` 在自己的 Step 2.5 中已询问过用户），直接复用该决策，不再重复询问
 
-以上信息若调用方未给出，用 AskUserQuestion 询问用户：类型、仓库、分支或 PR 编号；若发现输出目录已存在，额外询问覆盖策略。
+以上信息若调用方未给出，用 AskUserQuestion 询问用户：类型、仓库、分支或 PR 编号；若发现输出目录已存在，额外询问覆盖策略。**base 分支在本步骤统一确定一次**（询问用户或跑 `git merge-base`），确定后的值固定下来传给 Step 3、Step 4 派发的所有 agent，子 agent 不再自行确定 base，避免多个并发 agent 各自询问或算出不一致的 base。
 
 ### 可选：item 范围
 
@@ -52,7 +53,7 @@ grep -n '\[require-review\]' /home/peiran/data/my-claude-code/CLAUDE.md
 
 - 只给该组 i 中带 `[require-review]` 标记的条目原文（不要整份 CLAUDE.md，避免无关原则带偏判断）
 - 获取 review 对象的方式：
-  - local：`git -C ~/data/<repo> diff <base>...<branch>`（base 分支向调用方确认，或用 `git merge-base`）
+  - local：`git -C ~/data/<repo> diff <base>...<branch>`，`<base>` 用 Step 1 中已确定的 base 分支，agent 不再自行确定
   - remote：`gh pr diff <number> --repo <仓库全名>`，需要更多上下文时用 `git -C ~/data/<repo> show origin/<branch>:<path>` 读取具体文件
 - 只针对这些条目逐条给出结论（通过 / 存在问题），存在问题时注明文件路径和行号（已知时）
 - 结果写入 `~/data/review/<repo>/<branch>/item_<i>.md`，全部通过时写"各项均通过"

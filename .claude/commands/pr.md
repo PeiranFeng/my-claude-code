@@ -230,8 +230,8 @@ Gemini/Codex 的 review body 通常是自动生成的功能摘要，不包含具
 
 ```
 已归档 PR：
-  compass-app-jasper: #210, #211（共 2 条）
-  compass-core:       #55（共 1 条）
+  compass-app-jasper: #<n1>, #<n2>（共 <count> 条）
+  compass-core:       #<n>（共 <count> 条）
   fenghe-nn:          无新 PR
 文件位置：~/data/pr/
 ```
