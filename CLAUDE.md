@@ -46,6 +46,8 @@
 
 **2-5. `[require-review]` 禁止隐含魔法值混入输出**：禁止把魔法值混入正常取值区间的输出数据中充当特殊语义。此类语义应拆成独立、显式的字段表达。
 
+**2-6. `[require-review]` 注释只写一句话**：每条注释限一句话，禁止大段解释性文字。默认不写注释；只有代码本身无法表达的内容（隐藏约束、不变量、某个具体 bug 的规避、会让读者意外的行为）才需要注释，且只解释"为什么"，不解释"做了什么"——后者应通过命名让代码自解释。
+
 ---
 
 ### 3. Tensor 与 GPU
@@ -249,10 +251,12 @@ conda activate $CONDA_ENV
 export PYTHONNOUSERSITE=1
 export PYTHONPATH="$HOME/data/compass-app-jasper/app2:$HOME/data/compass-app-jasper/core:$HOME/data/compass-app-jasper/lib:$HOME/data/compass-app-jasper/lib2"
 
-# 运行测试（unittest，禁止 pytest）
+# 运行测试：先打开目标脚本确认写法，再选用对应模板
+# unittest 风格（继承 unittest.TestCase）：命令模板见注意事项
+# pytest 风格（普通函数 + assert/pytest fixture）：
 cd ~/data/compass-app-jasper
 PYTHONSAFEPATH=1 PYTHONPATH=$PWD/core:$PWD/app2:$PWD/lib:$PWD/lib2/python \
-  conda run -n $CONDA_ENV python -m unittest discover -s test/app2/data -v
+  conda run -n $CONDA_ENV python -m pytest <test_file_or_dir> -v
 
 # 运行实验（必须通过 run.sh，禁止直接调用子 Makefile）
 # CONFIG_NAME、DATA_SOURCE_PATH、BACKTEST、SEEDS、OVERRIDE 参数选择一律参见 app2/README.md
@@ -316,12 +320,21 @@ GitHub Actions 触发的实验，实际运行的代码与本地一样来自 comp
 
 ## 注意事项
 
-- **jasper 测试用 `unittest`**，compass-core 用 `pytest`，两个仓库不要混用
+- **jasper 仓库内 unittest、pytest 风格的测试文件都可能存在，不能按目录或仓库预判框架**：执行前先打开目标脚本确认写法（继承 `unittest.TestCase` 还是普通函数 + `assert`/pytest fixture），再选用对应命令模板（见 compass-app-jasper 关键命令）；compass-core、fenghe-nn 的测试命令模板见各自关键命令段落
 - **切换 jasper 分支会影响后台运行的实验**；多分支同时跑需使用不同仓库目录
 - submodule 在 jasper 中是 detached HEAD 状态，`git checkout` 到具体 commit 才生效
 - `fenghe` 是命名空间包，`lib/fenghe/` 和 `lib2/python/fenghe/` 合并；unittest 不执行 conftest，需手动在 PYTHONPATH 包含两个路径
 - 重复运行实验时保留 `description.md`，只删实验产物（`train/`、`merged/`、`outputs/`、`run.log`、`windows/`）
-- **运行或分析实验前必须先读 `compass-app-jasper/app2/README.md`**：运行时参照 README 选择 CONFIG_NAME、DATA_SOURCE_PATH 及其他参数；分析时参照 README 了解输出目录层级，不可对目录结构做假设
-- OVERRIDE 中每个参数必须确认存在于 `conf/` 下的 yaml，且必须用完整 Hydra 路径（如 `backtest.window_generator.size=2000`，不能写 `window_generator.size=2000`）
-- seed 覆盖用 `seed=seed-01`，**不能**用 `+seed=seed-01`（会报重复 key 错误）
+- **分析实验前必须先读 `compass-app-jasper/app2/README.md`**：了解输出目录层级，不可对目录结构做假设
+- OVERRIDE 中每个参数必须确认存在于 `conf/` 下的 yaml，且必须使用从对应 config group 顶层开始的完整 Hydra 路径，不能省略中间层级
+- seed 覆盖时该 key 已存在于配置中，直接赋值即可，不能加 `+` 前缀（`+` 用于新增不存在的 key，加在已存在的 key 上会报重复 key 错误）
 - **PyTorch tensor 默认 device 由 `try_to_use_gpu()` 统一设置**（`core/lib/utility/device.py:16`），在训练入口 `app2/train.py` 最顶部调用后，所有 `torch.tensor()`、`torch.arange()` 等创建操作自动使用 GPU device，无需每次显式传 `device=` 参数。
+- **jasper 运行 unittest 测试统一用直接执行脚本文件的方式，不用 `unittest discover`**：`discover -s <dir>` 会把该目录插到 `sys.path[0]`，若目录下存在与依赖模块同名的 fixture 目录会撞名导致导入错误，因此一律改用直接执行脚本文件：
+
+  ```bash
+  cd <测试文件所在目录>
+  PYTHONSAFEPATH=1 PYTHONPATH=$HOME/data/compass-app-jasper/core:$HOME/data/compass-app-jasper/app2:$HOME/data/compass-app-jasper/lib:$HOME/data/compass-app-jasper/lib2/python \
+    conda run -n $CONDA_ENV python <测试文件名>.py -v
+  ```
+
+  前提：该文件末尾有 `if __name__ == "__main__": unittest.main()`。
