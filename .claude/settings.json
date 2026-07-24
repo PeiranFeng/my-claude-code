@@ -34,7 +34,8 @@
       "Bash(conda:*)",
       "Bash(python:*)",
       "Bash(gh:*)",
-      "Bash(nvidia-smi:*)"
+      "Bash(nvidia-smi:*)",
+      "Read"
     ]
   }
 }
