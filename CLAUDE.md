@@ -112,17 +112,18 @@
 
 **9-3. 禁止自己编写 Python 程序**：不得通过任何方式（内联 bash 执行、写入 .py 文件再执行等）自行编写 Python 脚本来完成任务。应使用已有 CLI 工具、bash 命令或 Claude Code 内置工具（Read/Write/Edit/Bash）。唯一例外：读取 parquet 文件时，可以用 `python -c "..."` 内联或写入临时 `.py` 文件，但临时文件用完后必须立即删除。
 
-**9-4. 后台进程监控：用 Monitor 工具 + until 循环，退出条件必须包含进程存活检查**：**训练实验启动后必须立即用此模板监控，禁止用 `tail -f`、`grep` 日志或 Bash 裸 sleep 轮询。** 等待后台进程完成时，使用 Monitor 工具执行 until 循环（Claude Code 官方规范）。
-- **退出条件**：必须同时覆盖"成功完成"和"进程已死"两种情况，不能只依赖 log 内容匹配——进程被 OOM kill、信号终止时不会写入 log，单靠 log 匹配会永远不退出。标准模板：`until [ -f <完成标志文件> ] || ! kill -0 <PID> 2>/dev/null; do sleep 5; done`。
-- **`sleep` 的边界**：被禁止的是在 Bash 工具内裸跑 `sleep` 轮询（前台 `sleep` 会被 harness block）；模板里的 `sleep 5` 是 until 循环体的一部分、由 Monitor 工具执行，属于允许范围。两者区别在于"由谁执行"，不是"能否出现 sleep"。
+**9-4. 后台进程监控：用 Monitor 工具执行 `run_exp/wait.sh`，退出条件必须包含进程存活检查**：**训练实验启动后必须立即监控，禁止用 `tail -f`、`grep` 日志或 Bash 裸 sleep 轮询。** 等待后台进程完成时，用 Monitor 工具执行封装脚本 `bash ~/data/my-claude-code/run_exp/wait.sh <PID> [完成标志文件]`（轮询循环封装在脚本内，见 9-7）。
+- **退出条件**：`wait.sh` 同时覆盖"完成标志出现"和"进程已死"两种情况——进程被 OOM kill、信号终止时不会写入 log 或标志文件，单靠 log/标志匹配会永远不退出，故脚本必须带 PID 存活检查。
+- **`sleep` 的边界**：被禁止的是在 Bash 工具内裸跑 `sleep` 轮询（前台 `sleep` 会被 harness block）；`wait.sh` 里的 `sleep 5` 是循环体的一部分、由 Monitor 工具执行脚本，属于允许范围。
 
 **9-5.（已废弃）**
 
 **9-6. Hydra 管理的工作必须通过 `app2/conf/` 配置，禁止硬编码**：凡是由 Hydra 负责的工作（实例化、超参设置等），其配置一律在 `app2/conf/` 下对应的 config group 中书写，禁止将这些工作硬编码到代码中。当需要新增配置项而对应配置文件不存在时，先询问用户该配置应如何增加，不得自行在代码里绕过 Hydra 的配置体系。
 
-**9-7. 优先用单一命令，避免复合命令**：除非收到明确指令，执行命令时避免用管道（`|`）、`&&`、重定向（`>`、`2>&1`）等拼接的复合命令；依赖指令白名单的自动放行只对单一命令稳定生效，复合命令即使每段都在白名单也会落回人工确认。需要多步时拆成多个单命令调用。
-
-**9-8. 同步白名单**：`~/.claude/settings.json` 与受版本控制的 `.claude/settings.json` 两者的 `permissions.allow` 需保持一致，每个 session 启动时比对，不一致则以仓库为准同步。
+**9-7. 复合命令的处理**：
+- **a. 禁止复合命令**：管道（`|`）、`&&`、重定向（`>`、`2>&1`）、命令替换（`$(...)`）等拼接的复合命令一律禁止——白名单自动放行只对单一命令生效，复合命令落回人工确认且不利于自动化。
+- **b. 拆成单一指令逐个执行**：任何复杂命令拆成多个单一命令，逐条调用。
+- **c. 不可拆分的封装进 `run_exp/`**：多条必须同批执行、无法拆开的命令，向用户申请在 `~/data/my-claude-code/run_exp/` 下新建 shell 封装（如 `run.sh`、`wait.sh`），经同意后创建并以单命令调用；不得直接运行该复合命令、也不得擅自建脚本。
 
 ---
 
@@ -264,16 +265,17 @@ cd ~/data/compass-app-jasper
 PYTHONSAFEPATH=1 PYTHONPATH=$PWD/core:$PWD/app2:$PWD/lib:$PWD/lib2/python \
   conda run -n $CONDA_ENV python -m pytest <test_file_or_dir> -v
 
-# 运行实验（必须通过 run.sh，禁止直接调用子 Makefile）
-# CONFIG_NAME、DATA_SOURCE_PATH、BACKTEST、SEEDS、OVERRIDE 参数选择一律参见 app2/README.md
+# 运行实验（必须通过 run_exp/run.sh，禁止直接调用子 Makefile）
+# 参数（CONFIG_NAME、DATA_SOURCE_PATH、BACKTEST、SEEDS、OVERRIDE 的取值与配置）一律参见 app2/README.md
+# run.sh 首参是工作目录，自己 cd 进去、后台运行、写 run.log 与 run.pid（把重定向/后台/PID 封装在脚本内，保持调用为单命令，支持自动化）
 # 临时验证 → test/；持久化 → exp/；先创建 description.md
 mkdir -p ~/data/test/<exp-dir>
-cp ~/data/run_exp/run.sh ~/data/test/<exp-dir>/
-cd ~/data/test/<exp-dir>
-bash run.sh [参见 README] > run.log 2>&1 &
+conda run -n $CONDA_ENV --no-capture-output bash ~/data/my-claude-code/run_exp/run.sh ~/data/test/<exp-dir> <参见 README 的参数>
 
-# 停止实验
-kill -- -$(ps -o pgid= -p <PID> | tr -d ' ')
+# 停止实验：拆成单命令（禁用命令替换），从 run.pid 取 PID、查 PGID、按进程组 kill
+cat ~/data/test/<exp-dir>/run.pid    # -> <PID>
+ps -o pgid= -p <PID>                 # -> <PGID>
+kill -- -<PGID>
 
 # TensorBoard
 conda run -n $CONDA_ENV tensorboard --logdir ~/data/exp --port 6006 --bind_all

@@ -27,10 +27,14 @@
       "Bash(basename:*)",
       "Bash(pwd:*)",
       "Bash(diff:*)",
+      "Bash(cp:*)",
+      "Bash(ps:*)",
+      "Bash(kill:*)",
       "Bash(git:*)",
       "Bash(conda:*)",
       "Bash(python:*)",
-      "Bash(gh:*)"
+      "Bash(gh:*)",
+      "Bash(nvidia-smi:*)"
     ]
   }
 }
