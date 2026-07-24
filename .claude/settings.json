@@ -35,7 +35,21 @@
       "Bash(python:*)",
       "Bash(gh:*)",
       "Bash(nvidia-smi:*)",
+      "Bash(bash:*)",
       "Read"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/peiran/data/my-claude-code/.claude/hooks/no-compound.sh"
+          }
+        ]
+      }
     ]
   }
 }
