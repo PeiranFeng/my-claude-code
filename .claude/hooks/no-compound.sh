@@ -15,7 +15,7 @@ stripped="$(printf '%s' "$stripped" | sed 's/"[^"]*"//g')"
 
 if printf '%s' "$stripped" | grep -Eq '[|&;<>`]|\$\('; then
   cat <<'JSON'
-{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Compound command blocked. Try in order: 1) split into single commands; 2) rewrite the core command to drop the operator; 3) use an existing run_exp/ script; 4) add a parameter to an existing run_exp/ script; 5) ask the user to add a new run_exp/ script."}}
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Compound command blocked. Try in order: 1) split into single commands; 2) rewrite the core command to drop the operator; 3) use an existing run_exp/ script; 4) add a parameter to an existing run_exp/ script; 5) ask the user to add a new run_exp/ script; 6) if parameters precede the command (VAR=value ... cmd), move the command to the front."}}
 JSON
 fi
 exit 0
