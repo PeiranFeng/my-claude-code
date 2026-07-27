@@ -28,6 +28,8 @@
       "Bash(pwd:*)",
       "Bash(diff:*)",
       "Bash(cp:*)",
+      "Bash(mkdir:*)",
+      "Bash(rm:*)",
       "Bash(ps:*)",
       "Bash(kill:*)",
       "Bash(git:*)",
