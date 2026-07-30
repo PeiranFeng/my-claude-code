@@ -106,6 +106,8 @@
 
 **7-2. 影响远程的操作必须经用户明确确认**：所有对远程产生外部影响的操作——`git push`、`gh` 发评论 / issue / PR、合并 PR、删除远程分支等——一律需用户明确指示后才执行，禁止自动执行或顺手执行。`git push` 前还需按 7-1 核对改动。对于携带内容的远程操作（评论、PR 描述、issue 正文等），执行前必须先将完整内容展示给用户确认，不得在未经内容确认的情况下直接发送。
 
+**7-3. 涉及仓库路径的 git 操作统一用 `git -C <路径> <子命令>`，禁止先 `cd` 到目录再执行 git 命令**：`cd <目录>` 与 git 命令组合成的多语句命令，即使各条语句本身都在白名单内，也会触发 Claude Code 内置的"先切换目录再执行 git"风险检测，需要人工确认才能放行；若用换行分隔这些语句，还会绕开本仓库 `no-compound.sh` 的复合命令检测（该检测目前不识别换行符）。`git -C <路径> <子命令>` 是单个原子命令、首词固定为 `git`，不产生上述两个问题。
+
 ---
 
 ### 9. 项目专用规则
@@ -124,7 +126,7 @@
 
 **9-6. Hydra 管理的工作必须通过 `app2/conf/` 配置，禁止硬编码**：凡是由 Hydra 负责的工作（实例化、超参设置等），其配置一律在 `app2/conf/` 下对应的 config group 中书写，禁止将这些工作硬编码到代码中。当需要新增配置项而对应配置文件不存在时，先询问用户该配置应如何增加，不得自行在代码里绕过 Hydra 的配置体系。
 
-**9-7. 编写 Bash 命令时，指令本体是第一个词，不得把参数或变量赋值置于开头**：`VAR=value cmd ...` 这类写法把赋值放在命令之前，应避免。
+**9-7. 编写 Bash 命令时，指令本体是第一个词，不得把参数或变量赋值置于开头**：`VAR=value cmd ...` 这类写法会让命令首词变成赋值而非实际指令，导致 `.claude/settings.json` 里按首词前缀匹配的白名单规则失效——即使该指令本身在白名单内，也会被当作未匹配项拦截为需人工确认。需要设置环境变量时改用 `env VAR=value ... cmd ...`，让命令首词落在真实的可执行程序名上。
 
 ---
 
@@ -216,7 +218,7 @@
 
 ```bash
 cd ~/data/compass-core
-CUBLAS_WORKSPACE_CONFIG=:4096:8 python -m pytest test/
+env CUBLAS_WORKSPACE_CONFIG=:4096:8 python -m pytest test/
 ```
 
 主分支：`develop`；feature 分支格式：`<issue-number>-<description>`。
@@ -263,7 +265,7 @@ export PYTHONPATH="$HOME/data/compass-app-jasper/app2:$HOME/data/compass-app-jas
 # unittest 风格（继承 unittest.TestCase）：命令模板见注意事项
 # pytest 风格（普通函数 + assert/pytest fixture）：
 cd ~/data/compass-app-jasper
-PYTHONSAFEPATH=1 PYTHONPATH=$PWD/core:$PWD/app2:$PWD/lib:$PWD/lib2/python \
+env PYTHONSAFEPATH=1 PYTHONPATH=$PWD/core:$PWD/app2:$PWD/lib:$PWD/lib2/python \
   conda run -n $CONDA_ENV python -m pytest <test_file_or_dir> -v
 
 # 运行实验（必须通过 run_exp/run.sh，禁止直接调用子 Makefile）
@@ -342,7 +344,7 @@ GitHub Actions 触发的实验，实际运行的代码与本地一样来自 comp
 
   ```bash
   cd <测试文件所在目录>
-  PYTHONSAFEPATH=1 PYTHONPATH=$HOME/data/compass-app-jasper/core:$HOME/data/compass-app-jasper/app2:$HOME/data/compass-app-jasper/lib:$HOME/data/compass-app-jasper/lib2/python \
+  env PYTHONSAFEPATH=1 PYTHONPATH=$HOME/data/compass-app-jasper/core:$HOME/data/compass-app-jasper/app2:$HOME/data/compass-app-jasper/lib:$HOME/data/compass-app-jasper/lib2/python \
     conda run -n $CONDA_ENV python <测试文件名>.py -v
   ```
 

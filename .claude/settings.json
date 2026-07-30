@@ -38,6 +38,7 @@
       "Bash(gh:*)",
       "Bash(nvidia-smi:*)",
       "Bash(bash:*)",
+      "Bash(env:*)",
       "Read"
     ]
   },
