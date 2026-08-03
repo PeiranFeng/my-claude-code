@@ -1,5 +1,8 @@
 {
   "permissions": {
+    "deny": [
+      "Agent"
+    ],
     "allow": [
       "Bash(cd:*)",
       "Bash(echo:*)",
